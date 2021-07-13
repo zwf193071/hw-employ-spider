@@ -56,6 +56,7 @@ USER_AGENT_LIST = [
 from requests_html import HTMLSession
 import os, xlwt, xlrd, random
 from xlutils.copy import copy
+from matplotlib import pyplot as plt
 session = HTMLSession()
 
 class HWSpider(object):
@@ -94,8 +95,63 @@ class HWSpider(object):
             """翻页递增"""
             self.start_page += 1
             """翻页终止条件"""
-            if self.start_page == 20:
+            if self.start_page == 5:
                 self.is_running = False
+        """翻页完成，开始生成分析图"""
+        self.crate_img_four_func()
+    def crate_img_four_func(self):
+        """
+        生成四张图方法
+        :return:
+        """
+        # 统计数量
+        data = {}            # 大字典
+        addr_dict = {}       # 工作地址字典
+        cate_dict = {}       # 部门名称字典
+        for k_addr, v_cate in zip(self.addr_list, self.dept_list):
+            if k_addr in data:
+                # 大字典统计工作地址数据
+                data[k_addr] = data[k_addr] + 1
+                # 地址字典统计数据
+                addr_dict[k_addr] = addr_dict[k_addr] + 1
+            else:
+                data[k_addr] = 1
+                addr_dict[k_addr] = 1
+            if v_cate in data:
+                # 大字典统计工作属性数据
+                data[v_cate] = data[v_cate] + 1
+                # 工作属性字典统计数据
+                cate_dict[v_cate] = data[v_cate] + 1
+            else:
+                data[v_cate] = 1
+                cate_dict[v_cate] = 1
+        # 第一张图：根据岗位地址和岗位属性二者数量生成折线图
+        # 146，147两行代码解决图中中文显示问题
+        plt.rcParams['font.sans-serif'] = ['SimHei']
+        plt.rcParams['axes.unicode_minus'] = False
+        # 由于二者数据数量不统一，在此进行切片操作
+        x_axis_data = [i for i in addr_dict.values()][:5]
+        y_axis_data = [i for i in cate_dict.values()][:5]
+        # print(x_axis_data, y_axis_data)
+        # plot中参数的含义分别是横轴值，纵轴值，线的形状，颜色，透明度,线的宽度和标签
+        plt.plot(y_axis_data, x_axis_data, 'ro-', color='#4169E1', alpha=0.8, linewidth=1, label='数量')
+
+        # 显示标签，如果不加这句，即使在plot中加了label='一些数字'的参数，最终还是不会显示标签
+        plt.legend(loc="upper right")
+        plt.xlabel('地点数量')
+        plt.ylabel('部门数量')
+        plt.savefig('根据岗位地址和部门名称二者数量生成折线图.png')
+        plt.show()
+        # 第二张图：根据岗位地址数量生成饼图
+        """工作地址饼图"""
+        addr_dict_key = [k for k in addr_dict.keys()]
+        addr_dict_value = [v for v in addr_dict.values()]
+        plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+        plt.rcParams['axes.unicode_minus'] = False
+        plt.pie(addr_dict_value, labels=addr_dict_key, autopct='%1.1f%%')
+        plt.title(f'岗位地址和岗位属性百分比分布')
+        plt.savefig(f'岗位地址和岗位属性百分比分布-饼图')
+        plt.show()
     def parse_response_json(self, response):
         """
         解析响应
